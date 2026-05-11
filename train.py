@@ -38,9 +38,9 @@ test_dataset = datasets.OxfordIIITPet(
 
 
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle= True) 
-test_loader = DataLoader(train_dataset, batch_size=32, shuffle= True) 
+test_loader = DataLoader(train_dataset, batch_size=32, shuffle= False) 
 
-net = PetNet()
+net = PetNet().to(device)
 loss_function = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
@@ -51,6 +51,10 @@ for epoch in range(30):
 
     for i, data in enumerate(train_loader):
         inputs, labels = data
+
+        inputs = inputs.to(device)
+        labels = labels.to(device)
+
         optimizer.zero_grad()
         outputs = net(inputs)
 
@@ -65,8 +69,8 @@ for epoch in range(30):
 
 torch.save(net.state_dict(), 'trained_net.pth')
 
-net = PetNet()
-net.load_state_dict(torch.load('trained_net.pth'))
+net = PetNet().to(device)
+net.load_state_dict(torch.load('trained_net.pth', map_location=device))
 
 correct = 0
 total = 0
@@ -76,6 +80,10 @@ net.eval()
 with torch.no_grad():
     for data in test_loader:
         images, labels = data
+
+        images = images.to(device)
+        labels = labels.to(device)
+
         outputs = net(images)
         _, predicted = torch.max(outputs, 1)
         total += labels.size(0)
