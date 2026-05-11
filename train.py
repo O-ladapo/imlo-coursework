@@ -1,4 +1,6 @@
 import torch
+import torch.optim as optim
+import torch.nn as nn
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from model import PetNet
@@ -22,7 +24,25 @@ train_dataset = datasets.OxfordIIITPet(
 
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle= True) 
 
-images, labels = next(iter(train_loader))
-print(images.shape)
-print(labels.shape)
-print("First label:", labels[0])
+net = PetNet()
+loss_function = nn.CrossEntropyLoss()
+optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+
+for epoch in range(30):
+    print(f'Training epoch {epoch}')
+
+    running_loss = 0.0
+
+    for i, data in enumerate(train_loader):
+        inputs, labels = data
+        optimizer.zero_grad()
+        outputs = net(inputs)
+
+        loss = loss_function(outputs, labels)
+
+        loss.backward()
+        optimizer.step()
+
+        running_loss += loss.item()
+
+    print(f'Loss: {running_loss / len(train_loader):.4f}')
