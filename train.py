@@ -24,8 +24,8 @@ train_dataset = datasets.OxfordIIITPet(
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 
 net = PetNet().to(device)
-loss_function = nn.CrossEntropyLoss()
-optimizer = optim.Adam(net.parameters())
+loss_function = nn.CrossEntropyLoss(label_smoothing=0.1)
+optimizer = optim.Adam(net.parameters(), weight_decay=7e-4)
 scheduler = optim.lr_scheduler.OneCycleLR(
     optimizer, max_lr=0.005,
     steps_per_epoch=len(train_loader),

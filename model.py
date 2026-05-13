@@ -22,6 +22,7 @@ class PetNet(nn.Module):
         self.bn3b = nn.BatchNorm2d(128)
 
         self.pool = nn.MaxPool2d(2, 2)
+        self.dropout = nn.Dropout(0.25)
         self.global_avg_pool = nn.AdaptiveAvgPool2d((4, 4))
 
         self.fc1 = nn.Linear(128 * 4 * 4, 512)
@@ -42,6 +43,6 @@ class PetNet(nn.Module):
 
         x = self.global_avg_pool(x)
         x = torch.flatten(x, 1)
-        x = F.relu(self.fc1(x))
+        x = self.dropout(F.relu(self.fc1(x)))
         x = self.fc2(x)
         return x
