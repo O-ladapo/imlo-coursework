@@ -11,13 +11,14 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Your device is: ", device)
 
 class PetDatasetWithTrimap(Dataset):
-    def __init__(self, split):
+    def __init__(self, split, augment=False):
         self.base = datasets.OxfordIIITPet(
             root="data",
             split=split,
             target_types=("category", "segmentation"),
             download=True
         )
+        self.augment = augment
 
     def __len__(self):
         return len(self.base)
@@ -31,6 +32,19 @@ class PetDatasetWithTrimap(Dataset):
             interpolation=transforms.InterpolationMode.NEAREST
         )
 
+        if self.augment:
+            if random.random() > 0.5:
+                pad = 20
+                img = TF.pad(img, pad)
+                trimap = TF.pad(trimap, pad)
+                i, j, h, w = transforms.RandomCrop.get_params(img, (128, 128))
+                img = TF.crop(img, i, j, h, w)
+                trimap = TF.crop(trimap, i, j, h, w)
+
+            if random.random() > 0.5:
+                img = TF.hflip(img)
+                trimap = TF.hflip(trimap)
+
         img = TF.to_tensor(img)
         img = TF.normalize(img,
                            mean=[0.485, 0.456, 0.406],
@@ -41,7 +55,7 @@ class PetDatasetWithTrimap(Dataset):
 
         return img, label
 
-train_dataset = PetDatasetWithTrimap(split="trainval")
+train_dataset = PetDatasetWithTrimap(split="trainval", augment=True)
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=0)
 
 net = PetNet().to(device)
