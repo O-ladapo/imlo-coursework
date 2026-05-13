@@ -1,27 +1,48 @@
 import torch
 import torch.optim as optim
 import torch.nn as nn
-from torch.utils.data import DataLoader
+import random
+from torch.utils.data import DataLoader, Dataset
 from torchvision import datasets, transforms
+import torchvision.transforms.functional as TF
 from model import PetNet
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Your device is: ", device)
 
-train_transform = transforms.Compose([
-    transforms.Resize((128, 128)),
-    transforms.ToTensor()
-])
+class PetDatasetWithTrimap(Dataset):
+    def __init__(self, split):
+        self.base = datasets.OxfordIIITPet(
+            root="data",
+            split=split,
+            target_types=("category", "segmentation"),
+            download=True
+        )
 
-train_dataset = datasets.OxfordIIITPet(
-    root="data",
-    split="trainval",
-    target_types="category",
-    download=True,
-    transform=train_transform
-)
+    def __len__(self):
+        return len(self.base)
 
-train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+    def __getitem__(self, idx):
+        img, (label, trimap) = self.base[idx]
+
+        img = TF.resize(img, (128, 128))
+        trimap = TF.resize(
+            trimap, (128, 128),
+            interpolation=transforms.InterpolationMode.NEAREST
+        )
+
+        img = TF.to_tensor(img)
+        img = TF.normalize(img,
+                           mean=[0.485, 0.456, 0.406],
+                           std=[0.229, 0.224, 0.225])
+        trimap = TF.pil_to_tensor(trimap).float()
+        mask = ((trimap == 1) | (trimap == 3)).float()
+        img = img * mask
+
+        return img, label
+
+train_dataset = PetDatasetWithTrimap(split="trainval")
+train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=0)
 
 net = PetNet().to(device)
 loss_function = nn.CrossEntropyLoss(label_smoothing=0.1)
