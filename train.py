@@ -25,7 +25,12 @@ train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 
 net = PetNet().to(device)
 loss_function = nn.CrossEntropyLoss()
-optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+optimizer = optim.Adam(net.parameters())
+scheduler = optim.lr_scheduler.OneCycleLR(
+    optimizer, max_lr=0.005,
+    steps_per_epoch=len(train_loader),
+    epochs=30
+)
 
 for epoch in range(30):
     print(f'Training epoch {epoch}')
@@ -43,6 +48,7 @@ for epoch in range(30):
         loss = loss_function(outputs, labels)
         loss.backward()
         optimizer.step()
+        scheduler.step()
 
         running_loss += loss.item()
         _, predicted = torch.max(outputs, 1)
