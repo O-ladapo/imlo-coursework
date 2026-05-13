@@ -92,5 +92,6 @@ for epoch in range(30):
 
     print(f'Loss: {running_loss / len(train_loader):.4f}')
     print(f'Training Accuracy: {100 * correct / total:.2f}%')
+    print(f'LR: {scheduler.get_last_lr()[0]:.6f}')
 
 torch.save(net.state_dict(), 'trained_net.pth')
